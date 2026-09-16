@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 OpenSMI Contributors
+# SPDX-License-Identifier: CC0-1.0
+
+*.pyc
+/.idea
+/.vs
+/.vscode
+*.egg-info
+/dist
+*.log
+/build
+/.venv/
+/uv.lock
+/*.xml
+/*.html
+*.coverage
+/apidocs
+*.der
+*.pem
+*.sql
