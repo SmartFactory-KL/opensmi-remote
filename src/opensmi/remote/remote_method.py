@@ -16,10 +16,10 @@ from opensmi.remote.remote_mirror import (
 
 
 class RemoteMethod(
-    BaseMethod,
     RemoteParameterMirrorMixin,
     RemoteMonitoringUpdateMixin,
-    RemoteFinalResultUpdateMixin
+    RemoteFinalResultUpdateMixin,
+    BaseMethod,
 ):
 
     def __init__(self, *,

@@ -24,12 +24,12 @@ from opensmi.remote.remote_skill import RemoteSkill
 
 
 class RemoteComponent(
-    BaseComponent,
     ParentMixin,
     RemoteAttributeUpdateMixin,
     RemoteParameterMirrorMixin,
     RemoteMonitoringUpdateMixin,
-    NotificationForwarderMixin
+    NotificationForwarderMixin,
+    BaseComponent,
 ):
 
     _subscription: Subscription

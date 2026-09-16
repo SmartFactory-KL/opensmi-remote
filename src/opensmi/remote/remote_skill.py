@@ -25,11 +25,11 @@ from opensmi.remote.remote_mirror import (
 
 
 class RemoteSkill(
-    BaseSkill,
     ParentMixin[BaseMachineryItem],
     RemoteParameterMirrorMixin,
     RemoteMonitoringUpdateMixin,
     RemoteFinalResultUpdateMixin,
+    BaseSkill,
 ):
     def __init__(
         self,
