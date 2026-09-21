@@ -17,7 +17,7 @@ REMOTE_USERNAME = "remote"
 REMOTE_PASSWORD = "remote"
 
 
-class RemoteMachine(BaseMachine):
+class ExampleMachine(BaseMachine):
     def __init__(self) -> None:
         super().__init__()
         self._auto_lock: AutoLock | None = None
@@ -74,7 +74,7 @@ class RemoteMachine(BaseMachine):
 
 async def main() -> None:
     async with Server() as server:
-        await server.add_machine(RemoteMachine())  # add machine(s)
+        await server.add_machine(ExampleMachine())  # add machine(s)
         await server.start(blocking=True)  # start the server and block while it is running
 
 
