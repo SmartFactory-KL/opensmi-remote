@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 The Authors
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: CC0-1.0
 
 import asyncio
 
@@ -16,15 +16,12 @@ REMOTE_SERVER_URL = "opc.tcp://localhost:4843/"
 REMOTE_USERNAME = "remote"
 REMOTE_PASSWORD = "remote"
 
+
 class RemoteMachine(BaseMachine):
-    def __init__(self)-> None:
+    def __init__(self) -> None:
         super().__init__()
         self._auto_lock: AutoLock | None = None
-        self._remote_server = RemoteServer(
-            url=REMOTE_SERVER_URL,
-            username=REMOTE_USERNAME,
-            password=REMOTE_PASSWORD
-        )
+        self._remote_server = RemoteServer(url=REMOTE_SERVER_URL, username=REMOTE_USERNAME, password=REMOTE_PASSWORD)
 
     @override
     async def _write_identification(self) -> None:
@@ -67,7 +64,6 @@ class RemoteMachine(BaseMachine):
                 client_remote_skill=machine.skill_set["StartupSkill"],
             )
         )
-
 
     @override
     async def _shutdown(self) -> None:
