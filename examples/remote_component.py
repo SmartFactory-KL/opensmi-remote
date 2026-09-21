@@ -1,6 +1,8 @@
-# SPDX-FileCopyrightText: 2026 The Authors
+# SPDX-FileCopyrightText: 2026 OpenSMI Contributors
 #
 # SPDX-License-Identifier: CC0-1.0
+
+"""Demonstrates how a remote component can be wrapped into a RemoteComponent."""
 
 import asyncio
 
@@ -10,7 +12,7 @@ from opensmi.client.remote_server import RemoteServer
 from opensmi.server import BaseMachine, Server
 from typing_extensions import override
 
-from opensmi.remote import RemoteComponent, RemoteSkill
+from opensmi.remote import RemoteComponent
 
 REMOTE_SERVER_URL = "opc.tcp://localhost:4843/"
 REMOTE_USERNAME = "remote"
@@ -46,22 +48,6 @@ class ExampleMachine(BaseMachine):
                 name="RemoteComponent",
                 client_remote_component=machine.components["DummyComponent"],
                 recursive=False,  # change to True to recursively add all subcomponents and their skills
-            )
-        )
-
-        # single skills can also be added from remote module
-        await self.add_skill(
-            RemoteSkill(
-                name="RemoteDummySkill",
-                client_remote_skill=machine.skill_set["DummySkill"],
-            )
-        )
-
-        # the startup skill is required for the DummySkill above
-        await self.add_skill(
-            RemoteSkill(
-                name="RemoteStartupSkill",
-                client_remote_skill=machine.skill_set["StartupSkill"],
             )
         )
 
