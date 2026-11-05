@@ -8,11 +8,12 @@ from asyncua import ua
 from asyncua.common.methods import uamethod
 from asyncua.ua import NodeId
 from opensmi.client.remote_skill import RemoteSkill as ClientRemoteSkill
+from opensmi.client.sample import Sample
 from opensmi.core import SkillState
+from opensmi.core.nodesets import SmartFactoryMachineSetNodeIds as MachineSetNodeIds
 from opensmi.server.base_machinery_item import BaseMachineryItem
 from opensmi.server.base_skill import BaseSkill
 from opensmi.server.mixins.parent_mixin import ParentMixin
-from opensmi.server.nodesets import SmartFactoryMachineSetNodeIds as MachineSetNodeIds
 from opensmi.server.protocols import SessionProtocol
 from opensmi.server.ua_object import UaObjectDefinition
 from typing_extensions import override
@@ -129,6 +130,6 @@ class RemoteSkill(
     async def halt(self) -> None:
         await self._client_remote_object.halt()
 
-    async def _on_skill_state_change(self, remote_skill: RemoteSkill, new_state: SkillState) -> None:
+    async def _on_skill_state_change(self, remote_skill: ClientRemoteSkill, new_state: Sample[SkillState]) -> None:
         assert self._client_remote_object == remote_skill
-        await self._write_current_state(new_state)
+        await self._write_current_state(remote_skill.current_state)  # never None, unlike new_state.value
