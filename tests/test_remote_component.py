@@ -14,7 +14,7 @@ import pytest
 import pytest_asyncio
 from asyncua import ua
 from opensmi.client import AutoLock, RemoteServer
-from opensmi.core import MachineryItemState
+from opensmi.core import MachineryItemState, SkillState
 from opensmi.server import (
     BaseComponent,
     BaseMachine,
@@ -24,6 +24,7 @@ from opensmi.server import (
     Server,
     UaVariable,
 )
+from opensmi.server.common import reset_skill_and_wait
 from opensmi.server.config import ServerConfiguration
 from opensmi.server.mixins import MonitoringMixin, NotificationForwarderMixin, ParentMixin
 from typing_extensions import override
@@ -120,6 +121,13 @@ async def test_mirror_copies_the_identification(setup) -> None:
     _, _, mirror, _ = setup
     assert await mirror.identification.SerialNumber.read() == "gripper-1"
     assert (await mirror.identification.Manufacturer.read()).Text == "SCHUNK"
+
+
+async def test_reset_of_a_halted_mirrored_skill_waits_until_ready(setup) -> None:
+    _, gripper, mirror, _ = setup
+    assert mirror.skill_set["Grip"].current_state == SkillState.HALTED  # skills start halted
+    await reset_skill_and_wait(mirror.skill_set["Grip"], timeout=5)
+    assert gripper.skill_set["Grip"].current_state == SkillState.READY
 
 
 async def test_mirror_follows_the_machinery_item_state(setup) -> None:

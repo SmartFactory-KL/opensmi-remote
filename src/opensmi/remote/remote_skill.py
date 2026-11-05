@@ -124,7 +124,9 @@ class RemoteSkill(
 
     @override
     async def reset(self) -> None:
-        await self._client_remote_object.reset()
+        # wait for the remote, else the mirror is still HALTED when the caller waits for READY
+        await self._client_remote_object.reset(wait=True)
+        await self._write_current_state(self._client_remote_object.current_state)
 
     @override
     async def halt(self) -> None:
