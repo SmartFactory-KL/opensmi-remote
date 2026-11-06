@@ -7,6 +7,7 @@ from __future__ import annotations
 from asyncua.common.subscription import Subscription
 from opensmi.client import BaseRemoteComponent as ClientRemoteComponent
 from opensmi.client.remote_component import BaseRemoteComponent, NotificationEvent
+from opensmi.client.sample import Sample
 from opensmi.core import MachineryItemState
 from opensmi.server import BaseComponent
 from opensmi.server.mixins import NotificationForwarderMixin, ParentMixin
@@ -121,12 +122,10 @@ class RemoteComponent(
     ###########################################################
     # Subscription callbacks
 
-    async def _on_state_change(self, _component: BaseRemoteComponent, new_state: str) -> None:
+    async def _on_state_change(self, _component: BaseRemoteComponent, new_state: Sample[MachineryItemState]) -> None:
         """Mirror all remote component state changes."""
-        try:
-            await self.set_current_state(MachineryItemState[new_state])
-        except KeyError:
-            self.logger.warning("Received unknown machinery item state!", state=new_state)
+        if new_state.value is not None:  # None for bad samples: keep the last state
+            await self.set_current_state(new_state.value)
 
     async def _on_notification_event(self, _component: BaseRemoteComponent, event: NotificationEvent) -> None:
         """Handle remote notification events by logging them accordingly locally."""

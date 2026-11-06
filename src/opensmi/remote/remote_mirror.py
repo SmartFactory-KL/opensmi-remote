@@ -9,13 +9,13 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-from asyncua import ua
 from asyncua.common.node import Node
 from asyncua.common.subscription import DataChangeNotif
 from asyncua.ua import UaStatusCodeError
 from opensmi.client import RemoteVariable
 from opensmi.client.remote_callable import RemoteCallable
 from opensmi.client.remote_component import BaseRemoteComponent
+from opensmi.client.sample import Sample
 from opensmi.server import Server
 from opensmi.server.mixins import AttributesMixin, FinalResultDataMixin, MonitoringMixin, ParameterSetMixin
 
@@ -52,9 +52,9 @@ class RemoteAttributeUpdateMixin(AttributesMixin):
             )
             remote_attribute.value_changed.connect(self._on_attribute_update)
 
-    async def _on_attribute_update(self, var: RemoteVariable, value: ua.Variant) -> None:
+    async def _on_attribute_update(self, var: RemoteVariable, sample: Sample[Any]) -> None:
         try:
-            await self.attributes[var.name].write(value)
+            await self.attributes[var.name].write(sample.variant)
         except KeyError:
             _LOGGER.warning("Received unknown attribute update from remote component!", variable=var)
 
@@ -89,15 +89,15 @@ class RemoteParameterMirrorMixin(ParameterSetMixin):
         await subscription.subscribe_data_change(nodes)
 
     async def _copy_parameter_set_to_remote(self) -> None:
-        """Manually copy the (local) parameter set over to the mirrored remote object."""
+        """Manually copy the remote final result data into the local one."""
         for variable in self.parameter_set:
             local_value = await variable.read()
             await self._client_remote_object.parameter_set[variable.name].write_value(local_value)
 
 
-    async def _on_parameter_update(self, var: RemoteVariable, value: ua.Variant) -> None:
+    async def _on_parameter_update(self, var: RemoteVariable, sample: Sample[Any]) -> None:
         try:
-            await self.parameter_set[var.name].write(value)
+            await self.parameter_set[var.name].write(sample.variant)
         except KeyError:
             _LOGGER.warning("Received unknown parameter update!", variable=var)
 
@@ -145,9 +145,9 @@ class RemoteMonitoringUpdateMixin(MonitoringMixin):
             )
             remote_monitoring.value_changed.connect(self._on_monitoring_update)
 
-    async def _on_monitoring_update(self, var: RemoteVariable, value: ua.Variant) -> None:
+    async def _on_monitoring_update(self, var: RemoteVariable, sample: Sample[Any]) -> None:
         try:
-            await self.monitoring[var.name].write(value)
+            await self.monitoring[var.name].write(sample.variant)
         except KeyError:
             _LOGGER.warning("Received unknown monitoring update!", variable=var)
 
@@ -162,6 +162,9 @@ class RemoteFinalResultUpdateMixin(FinalResultDataMixin):
             return
 
         for remote_result in self._client_remote_object.final_result_data:
+            remote_result.value_changed.connect(self._on_final_result_update)
+            if remote_result.name in self.final_result_data:  # e.g. SuccessfulExecutionsCount of FiniteSkillType
+                continue
             await self.add_result_variable(
                 remote_result.name,
                 await remote_result.read_raw_value(),
@@ -170,16 +173,15 @@ class RemoteFinalResultUpdateMixin(FinalResultDataMixin):
                 unit=remote_result.unit.UnitId if remote_result.unit else None,
                 _range=(remote_result.range.Low, remote_result.range.High) if remote_result.range else None,
             )
-            remote_result.value_changed.connect(self._on_final_result_update)
 
-    async def _on_final_result_update(self, var: RemoteVariable, value: ua.Variant) -> None:
+    async def _on_final_result_update(self, var: RemoteVariable, sample: Sample[Any]) -> None:
         try:
-            await self.final_result_data[var.name].write(value)
+            await self.final_result_data[var.name].write(sample.value)  # local type, e.g. UInt32 of a FiniteSkillType
         except KeyError:
             _LOGGER.warning("Received unknown final result data update!", variable=var)
 
     async def _copy_final_result_data_from_remote(self) -> None:
-        """Manually copy the (local) parameter set over to the mirrored remote object."""
+        """Manually copy the remote final result data into the local one."""
         for remote_variable in self._client_remote_object.final_result_data:
             remote_value = await remote_variable.read_value(update_cache=True)
             await self.final_result_data[remote_variable.name].write(remote_value)

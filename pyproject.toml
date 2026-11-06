@@ -40,9 +40,10 @@ classifiers = [
 requires-python = ">=3.11"
 
 dependencies = [
-    "asyncua~=2.0.1",
-    "OpenSMI-Server>=0.2",
-    "OpenSMI-Client==1.0.0rc1",
+    "asyncua~=2.1.0",
+    "OpenSMI-Core>=0.7.1,<0.8",
+    "OpenSMI-Server>=0.3,<0.4",
+    "OpenSMI-Client>=1.0.0rc3.dev28", # states as Sample, reset(wait=True)
 ]
 
 [project.urls]
