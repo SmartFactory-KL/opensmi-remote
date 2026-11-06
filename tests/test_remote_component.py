@@ -49,6 +49,16 @@ class _CountingSkill(FinalResultDataMixin[BaseSkillFinalResultData], BaseSkillFi
         pass
 
 
+class _SlowResetSkill(BaseSkillFinite):
+    @override
+    async def _handle_running(self) -> None:
+        pass
+
+    @override
+    async def _handle_resetting(self) -> None:
+        await asyncio.sleep(30)
+
+
 class _GripperMonitoring(Monitoring):
     Position = UaVariable(0.0)
 
@@ -66,6 +76,7 @@ class _Gripper(
         await super()._init()
         await self.add_skill(_Skill(name="Grip"))
         await self.add_skill(_CountingSkill(name="Count"))
+        await self.add_skill(_SlowResetSkill(name="SlowReset"))
 
 
 class _Machine(BaseMachine):
@@ -168,3 +179,14 @@ async def test_mirrored_skill_follows_the_remote_result_data(setup) -> None:
         return await mirror.skill_set["Count"].final_result_data["SuccessfulExecutionsCount"].read() == 7
 
     await _eventually(is_mirrored)
+
+
+async def test_ua_reset_of_a_mirrored_skill_does_not_wait_for_the_remote(setup) -> None:
+    _, gripper, mirror, _ = setup
+    url = mirror.server.config.ua_server.endpoint_address
+    async with RemoteServer(url, username="developer", password="developer", auto_reconnect=False) as client:
+        await AutoLock(client.machines["M2"].lock).lock()
+        skill = client.machines["M2"].components["Gripper"].skill_set["SlowReset"]
+        async with asyncio.timeout(3):  # the remote takes 30 s to become READY
+            await skill.reset()
+    assert gripper.skill_set["SlowReset"].current_state == SkillState.RESETTING

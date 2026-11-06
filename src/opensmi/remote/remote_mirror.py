@@ -89,7 +89,7 @@ class RemoteParameterMirrorMixin(ParameterSetMixin):
         await subscription.subscribe_data_change(nodes)
 
     async def _copy_parameter_set_to_remote(self) -> None:
-        """Manually copy the (local) parameter set over to the mirrored remote object."""
+        """Manually copy the remote final result data into the local one."""
         for variable in self.parameter_set:
             local_value = await variable.read()
             await self._client_remote_object.parameter_set[variable.name].write_value(local_value)
@@ -181,7 +181,7 @@ class RemoteFinalResultUpdateMixin(FinalResultDataMixin):
             _LOGGER.warning("Received unknown final result data update!", variable=var)
 
     async def _copy_final_result_data_from_remote(self) -> None:
-        """Manually copy the (local) parameter set over to the mirrored remote object."""
+        """Manually copy the remote final result data into the local one."""
         for remote_variable in self._client_remote_object.final_result_data:
             remote_value = await remote_variable.read_value(update_cache=True)
             await self.final_result_data[remote_variable.name].write(remote_value)

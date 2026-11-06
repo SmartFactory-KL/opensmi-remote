@@ -97,7 +97,7 @@ class RemoteSkill(
     async def _ua_reset(self, _parent: NodeId, session: SessionProtocol) -> ua.StatusCode | None:
         try:
             await self._condition_access_allowed(session.user)
-            await self.reset()
+            await self._client_remote_object.reset()  # OPC UA calls return at once, the state follows
         except ua.UaStatusCodeError as e:
             return ua.StatusCode(e.code)
 
