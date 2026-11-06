@@ -162,6 +162,9 @@ class RemoteFinalResultUpdateMixin(FinalResultDataMixin):
             return
 
         for remote_result in self._client_remote_object.final_result_data:
+            remote_result.value_changed.connect(self._on_final_result_update)
+            if remote_result.name in self.final_result_data:  # e.g. SuccessfulExecutionsCount of FiniteSkillType
+                continue
             await self.add_result_variable(
                 remote_result.name,
                 await remote_result.read_raw_value(),
@@ -170,11 +173,10 @@ class RemoteFinalResultUpdateMixin(FinalResultDataMixin):
                 unit=remote_result.unit.UnitId if remote_result.unit else None,
                 _range=(remote_result.range.Low, remote_result.range.High) if remote_result.range else None,
             )
-            remote_result.value_changed.connect(self._on_final_result_update)
 
     async def _on_final_result_update(self, var: RemoteVariable, sample: Sample[Any]) -> None:
         try:
-            await self.final_result_data[var.name].write(sample.variant)
+            await self.final_result_data[var.name].write(sample.value)  # local type, e.g. UInt32 of a FiniteSkillType
         except KeyError:
             _LOGGER.warning("Received unknown final result data update!", variable=var)
 

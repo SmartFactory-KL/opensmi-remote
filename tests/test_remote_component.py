@@ -19,6 +19,7 @@ from opensmi.server import (
     BaseComponent,
     BaseMachine,
     BaseMachineryItem,
+    BaseSkillFinalResultData,
     BaseSkillFinite,
     Monitoring,
     Server,
@@ -26,7 +27,7 @@ from opensmi.server import (
 )
 from opensmi.server.common import reset_skill_and_wait
 from opensmi.server.config import ServerConfiguration
-from opensmi.server.mixins import MonitoringMixin, NotificationForwarderMixin, ParentMixin
+from opensmi.server.mixins import FinalResultDataMixin, MonitoringMixin, NotificationForwarderMixin, ParentMixin
 from typing_extensions import override
 
 from opensmi.remote import RemoteComponent
@@ -35,6 +36,14 @@ pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 
 class _Skill(BaseSkillFinite):
+    @override
+    async def _handle_running(self) -> None:
+        pass
+
+
+class _CountingSkill(FinalResultDataMixin[BaseSkillFinalResultData], BaseSkillFinite):
+    """Has SuccessfulExecutionsCount in its result data, like every finite skill of a pyuaadapter server."""
+
     @override
     async def _handle_running(self) -> None:
         pass
@@ -56,6 +65,7 @@ class _Gripper(
     async def _init(self) -> None:
         await super()._init()
         await self.add_skill(_Skill(name="Grip"))
+        await self.add_skill(_CountingSkill(name="Count"))
 
 
 class _Machine(BaseMachine):
@@ -146,5 +156,15 @@ async def test_mirror_follows_monitoring_values(setup) -> None:
 
     async def is_mirrored() -> bool:
         return await mirror.monitoring["Position"].read() == 5.0
+
+    await _eventually(is_mirrored)
+
+
+async def test_mirrored_skill_follows_the_remote_result_data(setup) -> None:
+    _, gripper, mirror, _ = setup
+    await gripper.skill_set["Count"].final_result_data.SuccessfulExecutionsCount.write(7)
+
+    async def is_mirrored() -> bool:
+        return await mirror.skill_set["Count"].final_result_data["SuccessfulExecutionsCount"].read() == 7
 
     await _eventually(is_mirrored)
